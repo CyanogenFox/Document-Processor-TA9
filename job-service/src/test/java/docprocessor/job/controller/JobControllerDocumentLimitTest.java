@@ -14,7 +14,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.client.RestTestClient;
 
 /** Separate class because 1001 documents do not fit the 1KB request limit of JobControllerTest. */
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = "job.poller.enabled=false")
 @AutoConfigureRestTestClient
 class JobControllerDocumentLimitTest {
 

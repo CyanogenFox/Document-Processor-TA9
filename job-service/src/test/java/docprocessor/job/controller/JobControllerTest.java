@@ -36,7 +36,7 @@ import org.springframework.test.web.servlet.client.RestTestClient;
 import tools.jackson.databind.json.JsonMapper;
 
 /** HTTP-level tests of the Job REST API against a real server, so Content-Length is real. */
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = "job.max-request-size=1KB")
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {"job.max-request-size=1KB", "job.poller.enabled=false"})
 @AutoConfigureRestTestClient
 class JobControllerTest {
 
