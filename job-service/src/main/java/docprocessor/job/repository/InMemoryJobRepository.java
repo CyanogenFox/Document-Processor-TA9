@@ -43,7 +43,7 @@ public class InMemoryJobRepository implements JobRepository {
                 .sorted(NEWEST_FIRST)
                 .toList();
         List<Job> content = matching.stream().skip((long) page * size).limit(size).toList();
-        return new PageResult<>(content, matching.size());
+        return new PageResult<>(content, page, size, matching.size());
     }
 
     @Override
