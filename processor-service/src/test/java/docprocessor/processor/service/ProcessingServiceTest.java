@@ -13,7 +13,10 @@ import docprocessor.contracts.JobEventType;
 import docprocessor.contracts.ProcessRequest;
 import docprocessor.contracts.ProcessStatus;
 import docprocessor.processor.analysis.DocumentAnalyzer;
+import java.time.Clock;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -31,6 +34,8 @@ class ProcessingServiceTest {
 
     private final List<JobEvent> events = new CopyOnWriteArrayList<>();
     private final InMemoryProcessJobRepository repository = new InMemoryProcessJobRepository();
+    private static final Instant NOW = Instant.parse("2026-01-01T12:00:00Z");
+    private final Clock clock = Clock.fixed(NOW, ZoneOffset.UTC);
     private JobQueue queue;
 
     @AfterEach
@@ -41,7 +46,7 @@ class ProcessingServiceTest {
     // Wires the service by hand with a pool of the given size.
     private ProcessingService service(int workers, int capacity, DocumentAnalyzer analyzer) {
         queue = new JobQueue(workers, capacity);
-        JobWorker worker = new JobWorker(repository, analyzer, events::add);
+        JobWorker worker = new JobWorker(repository, analyzer, events::add, clock);
         return new ProcessingServiceImpl(repository, queue, worker);
     }
 
@@ -82,6 +87,7 @@ class ProcessingServiceTest {
 
         assertThat(submission.created()).isTrue();
         assertThat(service.get(request.jobId()).results()).hasSize(3);
+        assertThat(service.get(request.jobId()).finishedAt()).isEqualTo(NOW);
         await().until(() -> events.size() == 2);
         assertThat(events).extracting(JobEvent::type)
                 .containsExactly(JobEventType.STARTED, JobEventType.COMPLETED);
@@ -144,6 +150,7 @@ class ProcessingServiceTest {
 
         ProcessJob job = service.get(request.jobId());
         assertThat(job.failureReason()).isEqualTo("PROCESSING_ERROR");
+        assertThat(job.finishedAt()).isEqualTo(NOW);
         assertThat(job.results()).isNullOrEmpty();
         assertThat(calls).hasValue(2);
         await().until(() -> events.size() == 2);
@@ -182,7 +189,7 @@ class ProcessingServiceTest {
         queue = new JobQueue(1, 1);
         JobWorker worker = new JobWorker(repository, new DocumentAnalyzer(), event -> {
             throw new IllegalStateException("publisher down");
-        });
+        }, clock);
         ProcessingService service = new ProcessingServiceImpl(repository, queue, worker);
         ProcessRequest request = request(2);
 

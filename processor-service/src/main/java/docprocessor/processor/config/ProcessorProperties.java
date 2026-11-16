@@ -12,5 +12,7 @@ public record ProcessorProperties(
         @DefaultValue("20") int queueCapacity,
         @DefaultValue("ws://localhost:8080/ws/events") URI jobServiceWsUrl,
         @DefaultValue("1s") Duration reconnectDelay,
-        @DefaultValue("30s") Duration maxReconnectDelay) {
+        @DefaultValue("30s") Duration maxReconnectDelay,
+        @DefaultValue("1h") Duration retention,
+        @DefaultValue("1m") Duration sweepInterval) {
 }

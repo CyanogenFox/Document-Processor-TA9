@@ -10,6 +10,7 @@ import docprocessor.contracts.ProcessRequest;
 import docprocessor.contracts.ProcessStatus;
 import docprocessor.processor.analysis.DocumentAnalyzer;
 import docprocessor.processor.events.JobEventPublisher;
+import java.time.Clock;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -29,6 +30,7 @@ public class JobWorker {
     private final ProcessJobRepository repository;
     private final DocumentAnalyzer analyzer;
     private final JobEventPublisher publisher;
+    private final Clock clock;
 
     public void run(ProcessRequest request) {
         MDC.put("jobId", request.jobId().toString());
@@ -65,14 +67,16 @@ public class JobWorker {
 
     private void changeState(ProcessRequest request, ProcessStatus status, String reason,
                              List<DocumentResult> results) {
-        repository.save(new ProcessJob(request.jobId(), status, reason, results));
+        boolean finished = status == ProcessStatus.COMPLETED || status == ProcessStatus.FAILED;
+        Instant finishedAt = finished ? clock.instant() : null;
+        repository.save(new ProcessJob(request.jobId(), status, reason, results, finishedAt));
         log.info("Job {} is now {}", request.jobId(), status);
     }
 
     // Events are notifications only: a publisher failure is logged and never changes the job.
     private void publish(ProcessRequest request, JobEventType type, String reason) {
         try {
-            publisher.publish(new JobEvent(request.jobId(), type, Instant.now(), reason));
+            publisher.publish(new JobEvent(request.jobId(), type, clock.instant(), reason));
         } catch (RuntimeException e) {
             log.warn("Could not publish {} event for job {}", type, request.jobId(), e);
         }

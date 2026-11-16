@@ -20,7 +20,8 @@ class WebSocketJobEventPublisherNotConnectedTest {
     void publish_notConnected_doesNotThrow() {
         URI closedPort = URI.create("ws://localhost:" + TestSocketUtils.findAvailableTcpPort() + "/ws/events");
         ProcessorProperties properties =
-                new ProcessorProperties(10, 20, closedPort, Duration.ofMillis(100), Duration.ofSeconds(1));
+                new ProcessorProperties(10, 20, closedPort, Duration.ofMillis(100), Duration.ofSeconds(1),
+                Duration.ofHours(1), Duration.ofMinutes(1));
         JobServiceConnection connection = new JobServiceConnection(properties);
         WebSocketJobEventPublisher publisher = new WebSocketJobEventPublisher(connection, JsonMapper.builder().build());
         JobEvent event = new JobEvent(UUID.randomUUID(), JobEventType.FAILED, Instant.now(), "boom");

@@ -21,7 +21,7 @@ public class ProcessingServiceImpl implements ProcessingService {
 
     @Override
     public Submission submit(ProcessRequest request) {
-        ProcessJob queued = new ProcessJob(request.jobId(), ProcessStatus.QUEUED, null, null);
+        ProcessJob queued = new ProcessJob(request.jobId(), ProcessStatus.QUEUED, null, null, null);
         if (!repository.saveIfAbsent(queued)) {
             return new Submission(get(request.jobId()), false);
         }

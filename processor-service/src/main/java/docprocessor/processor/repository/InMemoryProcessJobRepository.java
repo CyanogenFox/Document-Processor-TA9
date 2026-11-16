@@ -1,10 +1,12 @@
 package docprocessor.processor.repository;
 import docprocessor.processor.domain.ProcessJob;
 
+import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.springframework.stereotype.Repository;
 
 /** Keeps jobs in a concurrent map; everything is lost on restart. */
@@ -31,5 +33,19 @@ public class InMemoryProcessJobRepository implements ProcessJobRepository {
     @Override
     public boolean deleteById(UUID jobId) {
         return jobs.remove(jobId) != null;
+    }
+
+    // Safe against concurrent saves: the map removes each entry atomically, and finishedAt never changes once set.
+    @Override
+    public int deleteFinishedBefore(Instant cutoff) {
+        AtomicInteger removed = new AtomicInteger();
+        jobs.values().removeIf(job -> {
+            boolean expired = job.finishedAt() != null && job.finishedAt().isBefore(cutoff);
+            if (expired) {
+                removed.incrementAndGet();
+            }
+            return expired;
+        });
+        return removed.get();
     }
 }

@@ -1,6 +1,7 @@
 package docprocessor.processor.repository;
 import docprocessor.processor.domain.ProcessJob;
 
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -16,4 +17,7 @@ public interface ProcessJobRepository {
 
     /** Returns true if a job was removed. */
     boolean deleteById(UUID jobId);
+
+    /** Removes finished jobs whose finishedAt is strictly before the cutoff; returns how many. */
+    int deleteFinishedBefore(Instant cutoff);
 }
