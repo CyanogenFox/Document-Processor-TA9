@@ -177,6 +177,18 @@ class JobSyncTest {
     }
 
     @Test
+    void syncStale_processingJobNeverAccepted_redispatched() {
+        Job pending = savePending(Duration.ofSeconds(11));
+        Job job = pending.toBuilder().status(JobStatus.PROCESSING).build();
+        repository.save(job);
+
+        jobSync.syncStale();
+
+        verify(dispatcher).dispatch(job);
+        assertThat(stored(job).status()).isEqualTo(JobStatus.PROCESSING);
+    }
+
+    @Test
     void syncStale_freshPendingJob_notRedispatched() {
         Job job = savePending(Duration.ofSeconds(1));
 

@@ -1,6 +1,4 @@
 package docprocessor.processor.service;
-import docprocessor.processor.domain.ProcessJob;
-import docprocessor.processor.repository.InMemoryProcessJobRepository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -13,6 +11,8 @@ import docprocessor.contracts.JobEventType;
 import docprocessor.contracts.ProcessRequest;
 import docprocessor.contracts.ProcessStatus;
 import docprocessor.processor.analysis.DocumentAnalyzer;
+import docprocessor.processor.domain.ProcessJob;
+import docprocessor.processor.repository.InMemoryProcessJobRepository;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -128,6 +128,29 @@ class ProcessingServiceTest {
         } finally {
             release.countDown();
         }
+    }
+
+    @Test
+    void submit_analyzerThrowsStackOverflow_jobCompletedWithError() {
+        ProcessingService service = service(1, 1, new DocumentAnalyzer() {
+            @Override
+            public DocumentResult analyze(DocumentInput document) {
+                if (document.id().equals("doc-1")) {
+                    throw new StackOverflowError();
+                }
+                return super.analyze(document);
+            }
+        });
+        ProcessRequest request = request(3);
+
+        service.submit(request);
+        awaitStatus(request.jobId(), ProcessStatus.COMPLETED, service);
+
+        ProcessJob job = service.get(request.jobId());
+        assertThat(job.results()).extracting(DocumentResult::documentId)
+                .containsExactly("doc-0", "doc-1", "doc-2");
+        assertThat(job.results().get(1).error()).isEqualTo("PROCESSING_ERROR");
+        assertThat(job.results().get(0).error()).isNull();
     }
 
     @Test

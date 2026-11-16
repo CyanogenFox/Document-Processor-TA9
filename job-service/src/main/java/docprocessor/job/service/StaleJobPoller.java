@@ -20,8 +20,8 @@ public class StaleJobPoller {
     public void poll() {
         try {
             jobSync.syncStale();
-        } catch (Throwable t) {
-            log.error("Stale job poll failed", t);
+        } catch (Exception e) {
+            log.error("Stale job poll failed", e);
         }
     }
 }

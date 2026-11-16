@@ -11,12 +11,12 @@ public interface ProcessingService {
     record Submission(ProcessJob job, boolean created) {
     }
 
-    // Throws QueueFullException when the queue has no room.
+    /** Throws QueueFullException when the queue has no room. */
     Submission submit(ProcessRequest request);
 
-    // Throws ProcessJobNotFoundException for an unknown jobId.
+    /** Throws ProcessJobNotFoundException for an unknown jobId. */
     ProcessJob get(UUID jobId);
 
-    // Throws ProcessJobNotFoundException for an unknown jobId, ProcessJobActiveException while the job is running.
+    /** Throws ProcessJobNotFoundException for an unknown jobId, ProcessJobActiveException while the job is running. */
     void delete(UUID jobId);
 }

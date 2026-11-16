@@ -21,9 +21,10 @@ public class DocumentAnalyzer {
     private static final int TOP_WORDS_LIMIT = 5;
 
     // A word starts with a letter, may continue with letters, marks (accents) and digits,
-    // and may contain inner apostrophes (straight or curly) followed by a letter or digit.
+    // and may contain inner apostrophes (straight or curly) only when a letter follows.
+    // Possessive quantifiers keep the regex from recursing per character on long chains.
     private static final Pattern WORD = Pattern.compile(
-            "\\p{L}[\\p{L}\\p{M}\\p{N}]*(?:['\\u2019][\\p{L}\\p{N}][\\p{L}\\p{M}\\p{N}]*)*");
+            "\\p{L}[\\p{L}\\p{M}\\p{N}]*+(?:['\\u2019]\\p{L}[\\p{L}\\p{M}\\p{N}]*+)*+");
 
     public DocumentResult analyze(DocumentInput document) {
         long start = System.nanoTime();

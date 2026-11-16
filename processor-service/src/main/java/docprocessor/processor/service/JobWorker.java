@@ -1,6 +1,4 @@
 package docprocessor.processor.service;
-import docprocessor.processor.repository.ProcessJobRepository;
-import docprocessor.processor.domain.ProcessJob;
 
 import docprocessor.contracts.DocumentInput;
 import docprocessor.contracts.DocumentResult;
@@ -9,7 +7,9 @@ import docprocessor.contracts.JobEventType;
 import docprocessor.contracts.ProcessRequest;
 import docprocessor.contracts.ProcessStatus;
 import docprocessor.processor.analysis.DocumentAnalyzer;
+import docprocessor.processor.domain.ProcessJob;
 import docprocessor.processor.events.JobEventPublisher;
+import docprocessor.processor.repository.ProcessJobRepository;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -57,7 +57,7 @@ public class JobWorker {
         for (DocumentInput document : request.documents()) {
             try {
                 results.add(analyzer.analyze(document));
-            } catch (RuntimeException e) {
+            } catch (RuntimeException | StackOverflowError e) {
                 log.error("Analysis failed for job {} document {}", request.jobId(), document.id(), e);
                 results.add(DocumentResult.failed(document.id(), FAILURE_REASON));
             }

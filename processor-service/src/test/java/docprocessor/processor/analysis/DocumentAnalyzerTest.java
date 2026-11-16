@@ -111,4 +111,22 @@ class DocumentAnalyzerTest {
         assertThat(result.documentId()).isEqualTo("d1");
         assertThat(result.processingTimeMs()).isGreaterThanOrEqualTo(0);
     }
+
+    @Test
+    void analyze_longApostropheChain_noStackOverflow() {
+        String text = "a'".repeat(100_000) + "a";
+
+        DocumentResult result = analyze(text);
+
+        assertThat(result.wordCount()).isEqualTo(1);
+        assertThat(result.uniqueWordCount()).isEqualTo(1);
+        assertThat(result.characterCount()).isEqualTo(200_001);
+    }
+
+    @Test
+    void analyze_apostropheBeforeDigit_endsTheWord() {
+        DocumentResult result = analyze("it'5");
+
+        assertThat(result.topWords()).containsExactly(new WordFrequency("it", 1));
+    }
 }

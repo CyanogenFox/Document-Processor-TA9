@@ -1,6 +1,6 @@
 package docprocessor.processor.repository;
-import docprocessor.processor.domain.ProcessJob;
 
+import docprocessor.processor.domain.ProcessJob;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;

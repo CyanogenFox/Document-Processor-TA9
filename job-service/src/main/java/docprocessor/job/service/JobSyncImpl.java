@@ -1,9 +1,9 @@
 package docprocessor.job.service;
 
 import docprocessor.contracts.ProcessResponse;
+import docprocessor.job.config.JobProperties;
 import docprocessor.job.domain.FailureReason;
 import docprocessor.job.domain.Job;
-import docprocessor.job.config.JobProperties;
 import docprocessor.job.processor.ProcessorClient;
 import docprocessor.job.processor.ProcessorRejectedException;
 import docprocessor.job.processor.ProcessorUnavailableException;
@@ -62,13 +62,13 @@ public class JobSyncImpl implements JobSync {
                 log.error("Sync of job {} failed unexpectedly", job.id(), e);
             }
         }
-        redispatchStalePending(cutoff);
+        redispatchStaleUndispatched(cutoff);
     }
 
-    /** Undispatched PENDING jobs are sent again, or failed once unchanged past the give-up time. */
-    private void redispatchStalePending(Instant cutoff) {
+    /** Undispatched unfinished jobs (PENDING, or PROCESSING when STARTED beat the acceptance) are sent again, or failed once unchanged past the give-up time. */
+    private void redispatchStaleUndispatched(Instant cutoff) {
         Instant giveUpCutoff = clock.instant().minus(properties.poller().giveUpAfter());
-        for (Job job : repository.findUndispatchedPendingUpdatedBefore(cutoff)) {
+        for (Job job : repository.findUndispatchedUnfinishedUpdatedBefore(cutoff)) {
             try {
                 if (job.updatedAt().isBefore(giveUpCutoff)) {
                     log.warn("Job {} failed: never dispatched past the give-up time", job.id());

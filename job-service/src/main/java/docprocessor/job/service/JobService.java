@@ -10,15 +10,15 @@ import java.util.UUID;
 /** Creates, looks up, lists and deletes jobs. */
 public interface JobService {
 
-    // Throws InvalidJobException for duplicate document ids.
+    /** Throws InvalidJobException for duplicate document ids. */
     Job create(List<DocumentInput> documents);
 
-    // Throws JobNotFoundException for an unknown id.
+    /** Throws JobNotFoundException for an unknown id. */
     Job get(UUID id);
 
-    // Newest first; a null status means no filter; the size is capped at 100.
+    /** Newest first; a null status means no filter; the size is capped at 100. */
     PageResult<Job> list(JobStatus statusOrNull, int page, int size);
 
-    // Throws JobNotFoundException for an unknown id, JobActiveException while the job is unfinished.
+    /** Throws JobNotFoundException for an unknown id, JobActiveException while the job is unfinished. */
     void delete(UUID id);
 }

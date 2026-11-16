@@ -37,7 +37,8 @@ class EndToEndTest {
     void submitJob_bothServicesUp_completesWithResults() {
         int jobPort = TestSocketUtils.findAvailableTcpPort();
         int processorPort = TestSocketUtils.findAvailableTcpPort();
-        startServices(jobPort, processorPort, "ws://localhost:" + jobPort + "/ws/events");
+        startServices(jobPort, processorPort, "ws://localhost:" + jobPort + "/ws/events",
+                "job.poller.enabled=false");
 
         Map<String, Object> job = awaitCompleted(jobPort, submit(jobPort));
 

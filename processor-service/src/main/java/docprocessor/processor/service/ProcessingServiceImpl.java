@@ -1,9 +1,9 @@
 package docprocessor.processor.service;
-import docprocessor.processor.repository.ProcessJobRepository;
-import docprocessor.processor.domain.ProcessJob;
 
 import docprocessor.contracts.ProcessRequest;
 import docprocessor.contracts.ProcessStatus;
+import docprocessor.processor.domain.ProcessJob;
+import docprocessor.processor.repository.ProcessJobRepository;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
