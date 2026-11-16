@@ -1,4 +1,5 @@
-package docprocessor.processor.job;
+package docprocessor.processor.repository;
+import docprocessor.processor.domain.ProcessJob;
 
 import java.util.Optional;
 import java.util.UUID;

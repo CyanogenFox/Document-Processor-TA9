@@ -1,4 +1,4 @@
-package docprocessor.processor.web;
+package docprocessor.processor.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;

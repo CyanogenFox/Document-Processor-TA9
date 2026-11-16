@@ -1,4 +1,4 @@
-package docprocessor.processor.job;
+package docprocessor.processor.domain;
 
 import docprocessor.contracts.DocumentResult;
 import docprocessor.contracts.ProcessResponse;

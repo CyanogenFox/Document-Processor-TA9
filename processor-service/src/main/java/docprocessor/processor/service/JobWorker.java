@@ -1,4 +1,6 @@
-package docprocessor.processor.job;
+package docprocessor.processor.service;
+import docprocessor.processor.repository.ProcessJobRepository;
+import docprocessor.processor.domain.ProcessJob;
 
 import docprocessor.contracts.DocumentInput;
 import docprocessor.contracts.DocumentResult;

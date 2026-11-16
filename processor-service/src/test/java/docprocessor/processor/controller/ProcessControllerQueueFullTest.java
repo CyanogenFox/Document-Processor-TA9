@@ -1,4 +1,4 @@
-package docprocessor.processor.web;
+package docprocessor.processor.controller;
 
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;

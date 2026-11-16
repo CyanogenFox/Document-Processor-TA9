@@ -1,4 +1,4 @@
-package docprocessor.processor.job;
+package docprocessor.processor.service;
 
 /** Thrown when a job that is still queued or processing is deleted. */
 public class ProcessJobActiveException extends RuntimeException {

@@ -1,4 +1,4 @@
-package docprocessor.processor.job;
+package docprocessor.processor.service;
 
 /** Thrown when no job exists for the given id. */
 public class ProcessJobNotFoundException extends RuntimeException {

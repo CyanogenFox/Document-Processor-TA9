@@ -1,8 +1,8 @@
-package docprocessor.processor.web;
+package docprocessor.processor.controller;
 
 import docprocessor.contracts.ProcessRequest;
 import docprocessor.contracts.ProcessResponse;
-import docprocessor.processor.job.ProcessingService;
+import docprocessor.processor.service.ProcessingService;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;

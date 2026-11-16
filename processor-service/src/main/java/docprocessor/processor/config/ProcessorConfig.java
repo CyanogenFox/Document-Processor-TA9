@@ -1,7 +1,7 @@
 package docprocessor.processor.config;
 
 import docprocessor.processor.analysis.DocumentAnalyzer;
-import docprocessor.processor.job.JobQueue;
+import docprocessor.processor.service.JobQueue;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

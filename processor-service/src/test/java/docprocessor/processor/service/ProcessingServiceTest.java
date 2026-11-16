@@ -1,4 +1,6 @@
-package docprocessor.processor.job;
+package docprocessor.processor.service;
+import docprocessor.processor.domain.ProcessJob;
+import docprocessor.processor.repository.InMemoryProcessJobRepository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;

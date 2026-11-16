@@ -1,8 +1,8 @@
-package docprocessor.processor.web;
+package docprocessor.processor.controller;
 
-import docprocessor.processor.job.ProcessJobActiveException;
-import docprocessor.processor.job.ProcessJobNotFoundException;
-import docprocessor.processor.job.QueueFullException;
+import docprocessor.processor.service.ProcessJobActiveException;
+import docprocessor.processor.service.ProcessJobNotFoundException;
+import docprocessor.processor.service.QueueFullException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;

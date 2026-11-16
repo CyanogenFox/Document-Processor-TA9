@@ -1,4 +1,4 @@
-package docprocessor.processor.job;
+package docprocessor.processor.service;
 
 import jakarta.annotation.PreDestroy;
 import java.util.concurrent.ArrayBlockingQueue;
