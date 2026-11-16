@@ -42,7 +42,7 @@ class ProcessingServiceTest {
     private ProcessingService service(int workers, int capacity, DocumentAnalyzer analyzer) {
         queue = new JobQueue(workers, capacity);
         JobWorker worker = new JobWorker(repository, analyzer, events::add);
-        return new ProcessingService(repository, queue, worker);
+        return new ProcessingServiceImpl(repository, queue, worker);
     }
 
     private static ProcessRequest request(int documentCount) {
@@ -183,7 +183,7 @@ class ProcessingServiceTest {
         JobWorker worker = new JobWorker(repository, new DocumentAnalyzer(), event -> {
             throw new IllegalStateException("publisher down");
         });
-        ProcessingService service = new ProcessingService(repository, queue, worker);
+        ProcessingService service = new ProcessingServiceImpl(repository, queue, worker);
         ProcessRequest request = request(2);
 
         service.submit(request);
