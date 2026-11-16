@@ -8,6 +8,7 @@ import docprocessor.job.repository.PageResult;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -30,10 +31,14 @@ public class JobServiceImpl implements JobService {
     @Override
     public Job create(List<DocumentInput> documents) {
         Set<String> seen = new HashSet<>();
+        Set<String> duplicates = new LinkedHashSet<>();
         for (DocumentInput document : documents) {
             if (!seen.add(document.id())) {
-                throw new InvalidJobException("Duplicate document id: " + document.id());
+                duplicates.add(document.id());
             }
+        }
+        if (!duplicates.isEmpty()) {
+            throw new InvalidJobException("Duplicate document ids: " + String.join(", ", duplicates));
         }
         Instant now = clock.instant();
         Job job = Job.builder()

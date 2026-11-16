@@ -108,6 +108,12 @@ class JobControllerTest {
     }
 
     @Test
+    void post_severalDuplicateIds_returns400ListingAll() {
+        post(request("d1", "d1", "d2", "d3", "d3")).expectStatus().isBadRequest()
+                .expectBody().jsonPath("$.detail").isEqualTo("Duplicate document ids: d1, d3");
+    }
+
+    @Test
     void post_malformedJson_returns400() {
         post("{not json").expectStatus().isBadRequest();
     }
