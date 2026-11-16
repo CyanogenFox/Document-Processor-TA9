@@ -1,9 +1,11 @@
 package docprocessor.job.config;
 
+import java.net.http.HttpClient;
 import java.time.Clock;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.resilience.annotation.EnableResilientMethods;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.web.client.RestClient;
@@ -20,9 +22,13 @@ public class JobConfig {
         return Clock.systemUTC();
     }
 
-    /** Built from the auto-configured builder so the spring.http.clients timeouts apply. */
+    /** Timeouts are set in code, not application.yml, because the service must run without a config file. */
     @Bean
     RestClient processorRestClient(RestClient.Builder builder, JobProperties properties) {
-        return builder.baseUrl(properties.processor().baseUrl().toString()).build();
+        JobProperties.Processor processor = properties.processor();
+        HttpClient httpClient = HttpClient.newBuilder().connectTimeout(processor.connectTimeout()).build();
+        JdkClientHttpRequestFactory factory = new JdkClientHttpRequestFactory(httpClient);
+        factory.setReadTimeout(processor.readTimeout());
+        return builder.baseUrl(processor.baseUrl().toString()).requestFactory(factory).build();
     }
 }

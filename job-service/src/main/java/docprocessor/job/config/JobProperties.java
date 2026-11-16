@@ -16,7 +16,9 @@ public record JobProperties(
     /** How to reach the Processor Service. */
     public record Processor(
             @DefaultValue("http://localhost:8081") URI baseUrl,
-            @DefaultValue("10") int maxConcurrentDispatches) {
+            @DefaultValue("10") int maxConcurrentDispatches,
+            @DefaultValue("2s") Duration connectTimeout,
+            @DefaultValue("5s") Duration readTimeout) {
     }
 
     /** The stale-job poller; thresholds are measured from a job updatedAt. */

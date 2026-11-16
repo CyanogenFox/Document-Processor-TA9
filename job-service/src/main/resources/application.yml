@@ -7,10 +7,6 @@ spring:
   threads:
     virtual:
       enabled: true
-  http:
-    clients:
-      connect-timeout: 2s
-      read-timeout: 5s
   mvc:
     problemdetails:
       enabled: true
