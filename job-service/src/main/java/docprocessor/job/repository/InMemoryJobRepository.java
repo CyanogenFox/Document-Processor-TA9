@@ -56,6 +56,15 @@ public class InMemoryJobRepository implements JobRepository {
     }
 
     @Override
+    public List<Job> findUndispatchedPendingUpdatedBefore(Instant cutoff) {
+        return jobs.values().stream()
+                .filter(job -> job.dispatchedAt() == null)
+                .filter(job -> job.status() == JobStatus.PENDING)
+                .filter(job -> job.updatedAt().isBefore(cutoff))
+                .toList();
+    }
+
+    @Override
     public boolean deleteIfFinished(UUID id) {
         boolean[] removed = {false};
         jobs.computeIfPresent(id, (key, job) -> {

@@ -7,6 +7,9 @@ import docprocessor.job.domain.Job;
 import docprocessor.job.processor.ProcessorClient;
 import docprocessor.job.processor.ProcessorRejectedException;
 import docprocessor.job.processor.ProcessorUnavailableException;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
@@ -14,7 +17,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.stereotype.Service;
 
-/** Sends each job to the Processor on a background thread, a limited number at a time, and records the outcome. */
+/** Sends each job to the Processor on a background thread, a limited number at a time, once per job at any moment. */
 @Slf4j
 @Service
 public class JobDispatcherImpl implements JobDispatcher {
@@ -23,6 +26,7 @@ public class JobDispatcherImpl implements JobDispatcher {
     private final ProcessorClient client;
     private final TaskExecutor executor;
     private final Semaphore permits;
+    private final Set<UUID> inFlight = ConcurrentHashMap.newKeySet();
 
     public JobDispatcherImpl(JobLifecycle lifecycle, ProcessorClient client, JobProperties properties,
             @Qualifier("applicationTaskExecutor") TaskExecutor executor) {
@@ -34,10 +38,18 @@ public class JobDispatcherImpl implements JobDispatcher {
 
     @Override
     public void dispatch(Job job) {
-        executor.execute(() -> send(job));
+        if (!inFlight.add(job.id())) {
+            return;
+        }
+        try {
+            executor.execute(() -> send(job));
+        } catch (RuntimeException e) {
+            inFlight.remove(job.id());
+            throw e;
+        }
     }
 
-    /** Holds a permit across all retries; every path ends with the job accepted or failed. */
+    /** Holds a permit across all retries; ends with the job accepted, failed, or (Processor down) still PENDING. */
     private void send(Job job) {
         MDC.put("jobId", job.id().toString());
         try {
@@ -50,8 +62,7 @@ public class JobDispatcherImpl implements JobDispatcher {
                 permits.release();
             }
         } catch (ProcessorUnavailableException e) {
-            log.warn("Job {} failed: Processor unavailable", job.id());
-            lifecycle.failed(job.id(), FailureReason.PROCESSOR_UNAVAILABLE);
+            log.warn("Job {} stays PENDING: Processor unavailable, the poller will retry", job.id());
         } catch (ProcessorRejectedException e) {
             log.warn("Job {} failed: Processor rejected it", job.id());
             lifecycle.failed(job.id(), FailureReason.PROCESSOR_REJECTED);
@@ -63,6 +74,7 @@ public class JobDispatcherImpl implements JobDispatcher {
             log.error("Job {} failed unexpectedly", job.id(), e);
             lifecycle.failed(job.id(), FailureReason.INTERNAL_ERROR);
         } finally {
+            inFlight.remove(job.id());
             MDC.remove("jobId");
         }
     }

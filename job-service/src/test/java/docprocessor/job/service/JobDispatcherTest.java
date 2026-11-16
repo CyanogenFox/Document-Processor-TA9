@@ -6,11 +6,14 @@ import static org.awaitility.Awaitility.await;
 import docprocessor.contracts.DocumentInput;
 import docprocessor.job.StubProcessor;
 import docprocessor.job.StubProcessor.Reply;
+import docprocessor.job.config.JobProperties;
 import docprocessor.job.domain.FailureReason;
 import docprocessor.job.domain.Job;
 import docprocessor.job.domain.JobStatus;
+import docprocessor.job.processor.ProcessorClient;
 import docprocessor.job.repository.JobRepository;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.IntStream;
@@ -19,6 +22,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.core.task.SyncTaskExecutor;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 
@@ -47,6 +51,17 @@ class JobDispatcherTest {
     private JobDispatcher dispatcher;
     @Autowired
     private JobRepository repository;
+
+    @Autowired
+    private JobLifecycle lifecycle;
+    @Autowired
+    private ProcessorClient client;
+    @Autowired
+    private JobProperties properties;
+
+    private JobDispatcher syncDispatcher() {
+        return new JobDispatcherImpl(lifecycle, client, properties, new SyncTaskExecutor());
+    }
 
     @BeforeEach
     void resetStub() {
@@ -98,14 +113,31 @@ class JobDispatcherTest {
     }
 
     @Test
-    void dispatch_always503_jobFailedAfterFourAttempts() {
+    void dispatch_always503_jobStaysPending() {
         STUB.script(POST, PATH, Reply.of(503, "{}"));
         Job job = newJob();
 
-        dispatcher.dispatch(job);
+        syncDispatcher().dispatch(job);
 
-        awaitFailed(job, FailureReason.PROCESSOR_UNAVAILABLE);
         assertThat(STUB.requests(POST, PATH)).hasSize(4);
+        assertThat(stored(job).status()).isEqualTo(JobStatus.PENDING);
+        assertThat(stored(job).dispatchedAt()).isNull();
+        assertThat(stored(job).documents()).isNotNull();
+    }
+
+    @Test
+    void dispatch_sameJobWhileInFlight_sentOnce() {
+        List<Runnable> queued = new ArrayList<>();
+        JobDispatcher queuing = new JobDispatcherImpl(lifecycle, client, properties, queued::add);
+        Job job = newJob();
+
+        queuing.dispatch(job);
+        queuing.dispatch(job);
+
+        assertThat(queued).hasSize(1);
+        queued.get(0).run();
+        queuing.dispatch(job);
+        assertThat(queued).hasSize(2);
     }
 
     @Test

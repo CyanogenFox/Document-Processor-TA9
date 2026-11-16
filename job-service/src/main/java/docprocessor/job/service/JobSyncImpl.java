@@ -24,6 +24,7 @@ public class JobSyncImpl implements JobSync {
 
     private final JobRepository repository;
     private final JobLifecycle lifecycle;
+    private final JobDispatcher dispatcher;
     private final ProcessorClient client;
     private final Clock clock;
     private final JobProperties properties;
@@ -59,6 +60,25 @@ public class JobSyncImpl implements JobSync {
                 sync(job.id());
             } catch (RuntimeException e) {
                 log.error("Sync of job {} failed unexpectedly", job.id(), e);
+            }
+        }
+        redispatchStalePending(cutoff);
+    }
+
+    /** Undispatched PENDING jobs are sent again, or failed once unchanged past the give-up time. */
+    private void redispatchStalePending(Instant cutoff) {
+        Instant giveUpCutoff = clock.instant().minus(properties.poller().giveUpAfter());
+        for (Job job : repository.findUndispatchedPendingUpdatedBefore(cutoff)) {
+            try {
+                if (job.updatedAt().isBefore(giveUpCutoff)) {
+                    log.warn("Job {} failed: never dispatched past the give-up time", job.id());
+                    lifecycle.failed(job.id(), FailureReason.PROCESSOR_UNAVAILABLE);
+                } else {
+                    log.info("Job {} is still undispatched, re-dispatching", job.id());
+                    dispatcher.dispatch(job);
+                }
+            } catch (RuntimeException e) {
+                log.error("Re-dispatch of job {} failed unexpectedly", job.id(), e);
             }
         }
     }

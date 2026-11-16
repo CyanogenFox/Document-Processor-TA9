@@ -98,4 +98,18 @@ class InMemoryJobRepositoryTest {
 
         assertThat(repository.findDispatchedUnfinishedUpdatedBefore(cutoff)).containsExactly(stale);
     }
+
+    @Test
+    void findUndispatchedPendingUpdatedBefore_onlyStaleUndispatchedPending() {
+        Instant cutoff = T0.plusSeconds(100);
+        Job stale = job(JobStatus.PENDING, T0);
+        Job dispatched = job(JobStatus.PENDING, T0).toBuilder().dispatchedAt(T0).build();
+        Job processing = job(JobStatus.PROCESSING, T0);
+        Job fresh = job(JobStatus.PENDING, T0).toBuilder().updatedAt(cutoff).build();
+        for (Job j : new Job[] {stale, dispatched, processing, fresh}) {
+            repository.save(j);
+        }
+
+        assertThat(repository.findUndispatchedPendingUpdatedBefore(cutoff)).containsExactly(stale);
+    }
 }

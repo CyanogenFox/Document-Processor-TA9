@@ -24,6 +24,9 @@ public interface JobRepository {
     /** Dispatched, unfinished jobs whose updatedAt is strictly before the cutoff. */
     List<Job> findDispatchedUnfinishedUpdatedBefore(Instant cutoff);
 
+    /** Pending jobs the Processor has not accepted yet, whose updatedAt is strictly before the cutoff. */
+    List<Job> findUndispatchedPendingUpdatedBefore(Instant cutoff);
+
     /** Atomically deletes the job only if it is finished; true if it was deleted. */
     boolean deleteIfFinished(UUID id);
 }

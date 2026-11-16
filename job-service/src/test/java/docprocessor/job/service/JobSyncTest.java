@@ -1,6 +1,8 @@
 package docprocessor.job.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 import docprocessor.contracts.ProcessResponse;
 import docprocessor.contracts.ProcessStatus;
@@ -154,5 +156,43 @@ class JobSyncTest {
 
         assertThat(stored(job).status()).isEqualTo(JobStatus.FAILED);
         assertThat(stored(job).failureReason()).isEqualTo(FailureReason.PROCESSOR_UNAVAILABLE);
+    }
+
+    private Job savePending(Duration age) {
+        Instant updated = NOW.minus(age);
+        Job job = Job.builder().id(UUID.randomUUID()).status(JobStatus.PENDING).documentCount(1)
+                .createdAt(updated).updatedAt(updated).build();
+        repository.save(job);
+        return job;
+    }
+
+    @Test
+    void syncStale_stalePendingJob_redispatched() {
+        Job job = savePending(Duration.ofSeconds(11));
+
+        jobSync.syncStale();
+
+        verify(dispatcher).dispatch(job);
+        assertThat(stored(job).status()).isEqualTo(JobStatus.PENDING);
+    }
+
+    @Test
+    void syncStale_freshPendingJob_notRedispatched() {
+        Job job = savePending(Duration.ofSeconds(1));
+
+        jobSync.syncStale();
+
+        verify(dispatcher, never()).dispatch(job);
+    }
+
+    @Test
+    void syncStale_pendingPastGiveUp_jobFailedUnavailable() {
+        Job job = savePending(Duration.ofMinutes(6));
+
+        jobSync.syncStale();
+
+        assertThat(stored(job).status()).isEqualTo(JobStatus.FAILED);
+        assertThat(stored(job).failureReason()).isEqualTo(FailureReason.PROCESSOR_UNAVAILABLE);
+        verify(dispatcher, never()).dispatch(job);
     }
 }
