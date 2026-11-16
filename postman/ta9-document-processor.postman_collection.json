@@ -1,0 +1,456 @@
+{
+  "info": {
+    "name": "TA9 Document Processor",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "jobId",
+      "value": ""
+    },
+    {
+      "key": "polls",
+      "value": "0"
+    }
+  ],
+  "item": [
+    {
+      "name": "Create job",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"status is 202\", () => pm.response.to.have.status(202));",
+              "const j = pm.response.json();",
+              "pm.test(\"job is PENDING\", () => pm.expect(j.status).to.eql(\"PENDING\"));",
+              "pm.test(\"Location header set\", () => pm.expect(pm.response.headers.get(\"Location\")).to.include(j.id));",
+              "pm.collectionVariables.set(\"jobId\", j.id);",
+              "pm.collectionVariables.set(\"polls\", \"0\");"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/jobs",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "jobs"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"documents\": [\n    {\n      \"id\": \"d1\",\n      \"text\": \"Hello world, hello Postman\"\n    },\n    {\n      \"id\": \"d2\",\n      \"text\": \"Don't panic. State-of-the-art words.\"\n    }\n  ]\n}"
+        }
+      }
+    },
+    {
+      "name": "Get job (polls until COMPLETED)",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "setTimeout(function () {}, 300);"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"status is 200\", () => pm.response.to.have.status(200));",
+              "const j = pm.response.json();",
+              "const polls = parseInt(pm.collectionVariables.get(\"polls\")) + 1;",
+              "pm.collectionVariables.set(\"polls\", String(polls));",
+              "if (j.status !== \"COMPLETED\" && j.status !== \"FAILED\" && polls < 20) { postman.setNextRequest(pm.info.requestName); return; }",
+              "pm.test(\"job is COMPLETED\", () => pm.expect(j.status).to.eql(\"COMPLETED\"));",
+              "pm.test(\"one result per document\", () => pm.expect(j.results.length).to.eql(2));",
+              "pm.test(\"result has word count and sha256\", () => { pm.expect(j.results[0].wordCount).to.eql(4); pm.expect(j.results[0].sha256).to.have.length(64); });"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/jobs/{{jobId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "jobs",
+            "{{jobId}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "List jobs (filter by status)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"status is 200\", () => pm.response.to.have.status(200));",
+              "const p = pm.response.json();",
+              "pm.test(\"page has the job\", () => pm.expect(p.content.map(j => j.id)).to.include(pm.collectionVariables.get(\"jobId\")));",
+              "pm.test(\"summaries carry no results\", () => pm.expect(p.content[0].results).to.be.undefined);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/jobs?status=COMPLETED&page=0&size=20",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "jobs"
+          ],
+          "query": [
+            {
+              "key": "status",
+              "value": "COMPLETED"
+            },
+            {
+              "key": "page",
+              "value": "0"
+            },
+            {
+              "key": "size",
+              "value": "20"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "List jobs (paging, size 1)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"status is 200\", () => pm.response.to.have.status(200));",
+              "const p = pm.response.json();",
+              "pm.test(\"one item per page\", () => { pm.expect(p.size).to.eql(1); pm.expect(p.content.length).to.eql(1); });"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/jobs?page=0&size=1",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "jobs"
+          ],
+          "query": [
+            {
+              "key": "page",
+              "value": "0"
+            },
+            {
+              "key": "size",
+              "value": "1"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Delete finished job",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"status is 204\", () => pm.response.to.have.status(204));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/jobs/{{jobId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "jobs",
+            "{{jobId}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Get deleted job",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"status is 404\", () => pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/jobs/{{jobId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "jobs",
+            "{{jobId}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Invalid: empty documents",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"status is 400\", () => pm.response.to.have.status(400));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/jobs",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "jobs"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"documents\": []\n}"
+        }
+      }
+    },
+    {
+      "name": "Invalid: blank text",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"status is 400\", () => pm.response.to.have.status(400));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/jobs",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "jobs"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"documents\": [\n    {\n      \"id\": \"d1\",\n      \"text\": \"   \"\n    }\n  ]\n}"
+        }
+      }
+    },
+    {
+      "name": "Invalid: duplicate ids",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"status is 400\", () => pm.response.to.have.status(400));",
+              "pm.test(\"error names the duplicate\", () => pm.expect(pm.response.text()).to.include(\"d1\"));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/jobs",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "jobs"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"documents\": [\n    {\n      \"id\": \"d1\",\n      \"text\": \"a\"\n    },\n    {\n      \"id\": \"d1\",\n      \"text\": \"b\"\n    }\n  ]\n}"
+        }
+      }
+    },
+    {
+      "name": "Invalid: bad list status",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"status is 400\", () => pm.response.to.have.status(400));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/jobs?status=NOPE",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "jobs"
+          ],
+          "query": [
+            {
+              "key": "status",
+              "value": "NOPE"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Unknown job id (get)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"status is 404\", () => pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/jobs/00000000-0000-0000-0000-000000000000",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "jobs",
+            "00000000-0000-0000-0000-000000000000"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Unknown job id (delete)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"status is 404\", () => pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/jobs/00000000-0000-0000-0000-000000000000",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "jobs",
+            "00000000-0000-0000-0000-000000000000"
+          ]
+        }
+      }
+    }
+  ]
+}

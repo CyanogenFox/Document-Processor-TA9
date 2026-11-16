@@ -1,0 +1,22 @@
+services:
+  job-service:
+    build:
+      context: .
+      args:
+        MODULE: job-service
+    ports:
+      - "8080:8080"
+    environment:
+      JOB_PROCESSOR_BASE_URL: http://processor-service:8081
+
+  processor-service:
+    build:
+      context: .
+      args:
+        MODULE: processor-service
+    ports:
+      - "8081:8081"
+    environment:
+      PROCESSOR_JOB_SERVICE_WS_URL: ws://job-service:8080/ws/events
+    depends_on:
+      - job-service
