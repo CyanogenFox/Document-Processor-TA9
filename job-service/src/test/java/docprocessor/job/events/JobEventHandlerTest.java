@@ -99,7 +99,7 @@ class JobEventHandlerTest {
     }
 
     private DocumentResult result(String id) {
-        return new DocumentResult(id, 3, 3, List.of(), "abc", 10, 1);
+        return new DocumentResult(id, 3, 3, List.of(), "abc", 10, 1, null);
     }
 
     private void scriptGet(Job job, ProcessStatus status, String reason, List<DocumentResult> results) throws Exception {

@@ -49,7 +49,7 @@ public class DocumentAnalyzer {
         long elapsedMs = (System.nanoTime() - start) / 1_000_000;
 
         return new DocumentResult(document.id(), wordCount, counts.size(), topWords,
-                sha256(text), characterCount, elapsedMs);
+                sha256(text), characterCount, elapsedMs, null);
     }
 
     // SHA-256 of the UTF-8 bytes as lowercase hex.

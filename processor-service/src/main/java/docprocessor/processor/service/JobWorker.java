@@ -39,7 +39,7 @@ public class JobWorker {
             publish(request, JobEventType.STARTED, null);
 
             List<DocumentResult> results = analyzeAll(request);
-            if (results == null) {
+            if (results.stream().allMatch(r -> r.error() != null)) {
                 changeState(request, ProcessStatus.FAILED, FAILURE_REASON, null);
                 publish(request, JobEventType.FAILED, FAILURE_REASON);
             } else {
@@ -51,7 +51,7 @@ public class JobWorker {
         }
     }
 
-    // Returns all results, or null if a document failed (the error is logged, never returned).
+    // One result per document in input order; a failing document gets an error result (logged, never detailed).
     private List<DocumentResult> analyzeAll(ProcessRequest request) {
         List<DocumentResult> results = new ArrayList<>();
         for (DocumentInput document : request.documents()) {
@@ -59,7 +59,7 @@ public class JobWorker {
                 results.add(analyzer.analyze(document));
             } catch (RuntimeException e) {
                 log.error("Analysis failed for job {} document {}", request.jobId(), document.id(), e);
-                return null;
+                results.add(DocumentResult.failed(document.id(), FAILURE_REASON));
             }
         }
         return results;

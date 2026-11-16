@@ -58,7 +58,7 @@ class JobLifecycleTest {
 
     @Test
     void completed_setsResultsAndDropsDocuments() {
-        List<DocumentResult> results = List.of(new DocumentResult("a", 1, 1, List.of(), "h", 4, 0L));
+        List<DocumentResult> results = List.of(new DocumentResult("a", 1, 1, List.of(), "h", 4, 0L, null));
 
         assertThat(lifecycle.completed(id, results)).isTrue();
 

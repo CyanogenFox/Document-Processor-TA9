@@ -131,7 +131,7 @@ class ProcessingServiceTest {
     }
 
     @Test
-    void submit_analyzerThrowsOnSecondDocument_jobFailedAndRestSkipped() {
+    void submit_oneDocumentFails_jobCompletedWithError() {
         AtomicInteger calls = new AtomicInteger();
         ProcessingService service = service(1, 1, new DocumentAnalyzer() {
             @Override
@@ -146,13 +146,47 @@ class ProcessingServiceTest {
         ProcessRequest request = request(3);
 
         service.submit(request);
+        awaitStatus(request.jobId(), ProcessStatus.COMPLETED, service);
+
+        ProcessJob job = service.get(request.jobId());
+        assertThat(job.failureReason()).isNull();
+        assertThat(job.finishedAt()).isEqualTo(NOW);
+        assertThat(calls).hasValue(3);
+        assertThat(job.results()).extracting(DocumentResult::documentId)
+                .containsExactly("doc-0", "doc-1", "doc-2");
+        DocumentResult failed = job.results().get(1);
+        assertThat(failed.error()).isEqualTo("PROCESSING_ERROR");
+        assertThat(failed.sha256()).isNull();
+        assertThat(failed.topWords()).isNull();
+        assertThat(failed.wordCount()).isZero();
+        for (int i : new int[] {0, 2}) {
+            DocumentResult ok = job.results().get(i);
+            assertThat(ok.error()).isNull();
+            assertThat(ok.wordCount()).isEqualTo(3);
+            assertThat(ok.sha256()).isNotNull();
+        }
+        await().until(() -> events.size() == 2);
+        assertThat(events).extracting(JobEvent::type)
+                .containsExactly(JobEventType.STARTED, JobEventType.COMPLETED);
+    }
+
+    @Test
+    void submit_allDocumentsFail_jobFailed() {
+        ProcessingService service = service(1, 1, new DocumentAnalyzer() {
+            @Override
+            public DocumentResult analyze(DocumentInput document) {
+                throw new IllegalStateException("boom");
+            }
+        });
+        ProcessRequest request = request(3);
+
+        service.submit(request);
         awaitStatus(request.jobId(), ProcessStatus.FAILED, service);
 
         ProcessJob job = service.get(request.jobId());
         assertThat(job.failureReason()).isEqualTo("PROCESSING_ERROR");
         assertThat(job.finishedAt()).isEqualTo(NOW);
-        assertThat(job.results()).isNullOrEmpty();
-        assertThat(calls).hasValue(2);
+        assertThat(job.results()).isNull();
         await().until(() -> events.size() == 2);
         assertThat(events).extracting(JobEvent::type)
                 .containsExactly(JobEventType.STARTED, JobEventType.FAILED);
