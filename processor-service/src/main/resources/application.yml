@@ -11,6 +11,10 @@ spring:
     problemdetails:
       enabled: true
 
+logging:
+  pattern:
+    level: "%5p [%X{jobId:-}]"
+
 management:
   endpoints:
     web:
